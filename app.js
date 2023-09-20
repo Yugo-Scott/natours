@@ -16,10 +16,10 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev')); //ログを出力するミドルウェア
 }
 
-app.use((req, res, next) => {
-  console.log('Hello from the middleware 👋');
-  next();
-});
+// app.use((req, res, next) => {
+//   console.log('Hello from the middleware 👋');
+//   next();
+// });
 
 app.use((req, res, next) => {
   req.requestTime = new Date().toISOString();
@@ -30,6 +30,14 @@ app.use((req, res, next) => {
 // /api/v1/toursへのリクエストはtourRouterを経由して処理 
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
+
+app.get('*', (req, res) => { //全てのHTTPメソッドに対応するルートハンドラー
+  res.status(404).json({
+    status: 'fail',
+    message: `Can't find ${req.originalUrl} on this server!`, //req.originalUrlはリクエストのURLを返す
+  });
+});
+
 app.use(express.static(`${__dirname}/public`)); //静的ファイルを提供するミドルウェア
 
 module.exports = app;
