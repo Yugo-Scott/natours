@@ -2,6 +2,9 @@
 const { id } = require('date-fns/locale');
 const express = require('express');
 const morgan = require('morgan');
+const globalErrorHandler = require('./controllers/errorController');
+
+const AppError = require('./utils/appError');
 
 const { get } = require('http');
 const tourRouter = require('./routes/tourRoutes');
@@ -16,6 +19,8 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev')); //ログを出力するミドルウェア
 }
 
+app.use(express.static(`${__dirname}/public`)); //静的ファイルを提供するミドルウェア
+
 // app.use((req, res, next) => {
 //   console.log('Hello from the middleware 👋');
 //   next();
@@ -26,18 +31,27 @@ app.use((req, res, next) => {
   next();
 });
 
-// 　Routing middleware that only applies to the tourRouter when the route is /api/v1/tours 
+// Routing middleware that only applies to the tourRouter when the route is /api/v1/tours 
 // /api/v1/toursへのリクエストはtourRouterを経由して処理 
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
 
-app.get('*', (req, res) => { //全てのHTTPメソッドに対応するルートハンドラー
-  res.status(404).json({
-    status: 'fail',
-    message: `Can't find ${req.originalUrl} on this server!`, //req.originalUrlはリクエストのURLを返す
-  });
+
+app.all('*', (req, res, next) => {
+  //全てのHTTPメソッドに対応するルートハンドラー
+  // res.status(404).json({
+  //   status: 'fail',
+  //   message: `Can't find ${req.originalUrl} on this server!`, //req.originalUrlはリクエストのURLを返す
+  // });
+
+  // const err = new Error(`Can't find ${req.originalUrl} on this server!`);
+  // err.status = 'fail';
+  // err.statusCode = 404;
+
+  next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404)); //next関数に引数を渡すと、エラーハンドリングミドルウェアに処理が移る
 });
 
-app.use(express.static(`${__dirname}/public`)); //静的ファイルを提供するミドルウェア
+app.use(globalErrorHandler);
+
 
 module.exports = app;
